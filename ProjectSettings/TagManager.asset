@@ -6,6 +6,9 @@ TagManager:
   tags:
   - Ground
   - Enemy
+  - Drink
+  - Box
+  - Door
   layers:
   - Default
   - TransparentFX
