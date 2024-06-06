@@ -26,12 +26,16 @@ public class PlayerController : MonoBehaviour
     private bool isFacingRight = true;
     private bool isAttacking = false;
     private bool isDodging = false;
+    private bool isInvincible = false;
     private float lastDodgeTime;
     private float lastContactDamageTime; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½
 
     [SerializeField] private BossInterfaceManager bossInterfaceManager;
-    public int bossMaxHealth = 100; // ë³´ìŠ¤ì˜ ìµœëŒ€ ì²´ë ¥
-    private int bossCurrentHealth; // ë³´ìŠ¤ì˜ í˜„ì¬ ì²´ë ¥
+    public int bossMaxHealth = 100; // ë³´ìŠ¤??ìµœë? ì²´ë ¥
+    private int bossCurrentHealth; // ë³´ìŠ¤???„ì¬ ì²´ë ¥
+
+    private float lastContactDamageTime;
+
 
     void Start()
     {
@@ -113,13 +117,15 @@ public class PlayerController : MonoBehaviour
                 Enemy enemyComponent = enemy.GetComponent<Enemy>();
                 if (enemyComponent != null)
                 {
-                    enemyComponent.TakeDamage(attackDamage);
+                    Vector2 knockbackDirection = (enemy.transform.position - transform.position).normalized;
+                    enemyComponent.TakeDamage(attackDamage, knockbackDirection);
                 }
             }
 
             StartCoroutine(AttackMoveCoroutine());
         }
     }
+
 
     IEnumerator AttackMoveCoroutine()
     {
@@ -146,6 +152,7 @@ public class PlayerController : MonoBehaviour
             animator.SetTrigger("isDodging");
 
             StartCoroutine(DodgeMoveCoroutine());
+            StartCoroutine(DodgeInvincibilityCoroutine());
         }
     }
 
@@ -161,6 +168,33 @@ public class PlayerController : MonoBehaviour
         }
 
         isDodging = false;
+    }
+
+    IEnumerator DodgeInvincibilityCoroutine()
+    {
+        isInvincible = true;
+        float invincibilityTime = 2f; // ¹«Àû À¯Áö ½Ã°£
+        float elapsedTime = 0f;
+
+        while (elapsedTime < invincibilityTime)
+        {
+            elapsedTime += Time.deltaTime;
+
+            // ¹«Àû »óÅÂ¿¡¼­µµ ¹æÇâ ÀüÈ¯À» Ã³¸®
+            float horizontal = Input.GetAxis("Horizontal");
+            if (horizontal > 0 && !isFacingRight)
+            {
+                Flip();
+            }
+            else if (horizontal < 0 && isFacingRight)
+            {
+                Flip();
+            }
+
+            yield return null;
+        }
+
+        isInvincible = false;
     }
 
     void OnCollisionEnter2D(Collision2D collision)
@@ -192,6 +226,12 @@ public class PlayerController : MonoBehaviour
                 {
                     TakeDamage(enemy.damage); // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ Ã¼ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
                     lastContactDamageTime = Time.time;
+
+                    if (!isInvincible)
+                    {
+                        TakeDamage(enemy.damage);
+                        lastContactDamageTime = Time.time;
+                    }
                 }
             }
         }
@@ -216,12 +256,17 @@ public class PlayerController : MonoBehaviour
 
     public void TakeDamage(int damage)
     {
-        currentHealth -= damage;
-        Debug.Log("Player took damage. Current health: " + currentHealth);
-        if (currentHealth <= 0)
+        if (!isInvincible)
         {
             Debug.Log("Player died");
             // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½
+            currentHealth -= damage;
+            Debug.Log("Player took damage. Current health: " + currentHealth);
+            if (currentHealth <= 0)
+            {
+                Debug.Log("Player died");
+                // °ÔÀÓ ¿À¹ö Ã³¸®
+            }
         }
     }
 
