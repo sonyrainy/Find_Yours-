@@ -24,8 +24,9 @@ public class PlayerController : MonoBehaviour
     private bool isFacingRight = true;
     private bool isAttacking = false;
     private bool isDodging = false;
+    private bool isInvincible = false;
     private float lastDodgeTime;
-    private float lastContactDamageTime; // 마지막으로 접촉 데미지를 입힌 시간
+    private float lastContactDamageTime;
 
     void Start()
     {
@@ -107,13 +108,15 @@ public class PlayerController : MonoBehaviour
                 Enemy enemyComponent = enemy.GetComponent<Enemy>();
                 if (enemyComponent != null)
                 {
-                    enemyComponent.TakeDamage(attackDamage);
+                    Vector2 knockbackDirection = (enemy.transform.position - transform.position).normalized;
+                    enemyComponent.TakeDamage(attackDamage, knockbackDirection);
                 }
             }
 
             StartCoroutine(AttackMoveCoroutine());
         }
     }
+
 
     IEnumerator AttackMoveCoroutine()
     {
@@ -140,6 +143,7 @@ public class PlayerController : MonoBehaviour
             animator.SetTrigger("isDodging");
 
             StartCoroutine(DodgeMoveCoroutine());
+            StartCoroutine(DodgeInvincibilityCoroutine());
         }
     }
 
@@ -155,6 +159,33 @@ public class PlayerController : MonoBehaviour
         }
 
         isDodging = false;
+    }
+
+    IEnumerator DodgeInvincibilityCoroutine()
+    {
+        isInvincible = true;
+        float invincibilityTime = 2f; // 무적 유지 시간
+        float elapsedTime = 0f;
+
+        while (elapsedTime < invincibilityTime)
+        {
+            elapsedTime += Time.deltaTime;
+
+            // 무적 상태에서도 방향 전환을 처리
+            float horizontal = Input.GetAxis("Horizontal");
+            if (horizontal > 0 && !isFacingRight)
+            {
+                Flip();
+            }
+            else if (horizontal < 0 && isFacingRight)
+            {
+                Flip();
+            }
+
+            yield return null;
+        }
+
+        isInvincible = false;
     }
 
     void OnCollisionEnter2D(Collision2D collision)
@@ -184,8 +215,11 @@ public class PlayerController : MonoBehaviour
                 Enemy enemy = collision.gameObject.GetComponent<Enemy>();
                 if (enemy != null)
                 {
-                    TakeDamage(enemy.damage); // 적과 접촉 시 체력 감소
-                    lastContactDamageTime = Time.time;
+                    if (!isInvincible)
+                    {
+                        TakeDamage(enemy.damage);
+                        lastContactDamageTime = Time.time;
+                    }
                 }
             }
         }
@@ -210,12 +244,15 @@ public class PlayerController : MonoBehaviour
 
     public void TakeDamage(int damage)
     {
-        currentHealth -= damage;
-        Debug.Log("Player took damage. Current health: " + currentHealth);
-        if (currentHealth <= 0)
+        if (!isInvincible)
         {
-            Debug.Log("Player died");
-            // 게임 오버 처리
+            currentHealth -= damage;
+            Debug.Log("Player took damage. Current health: " + currentHealth);
+            if (currentHealth <= 0)
+            {
+                Debug.Log("Player died");
+                // 게임 오버 처리
+            }
         }
     }
 }

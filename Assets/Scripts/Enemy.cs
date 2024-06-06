@@ -12,6 +12,7 @@ public class Enemy : MonoBehaviour
     public Transform attackPoint; // 공격 범위의 중심점
     public float attackRadius = 0.5f; // 공격 범위의 반지름
     public float contactDamageCooldown = 1f; // 적과 접촉 시 데미지를 입히는 간격
+    public float knockbackForce = 5.0f; // 넉백 힘
 
     private Transform player;
     private Rigidbody2D rb;
@@ -46,7 +47,7 @@ public class Enemy : MonoBehaviour
 
         float distanceToPlayer = Vector2.Distance(transform.position, player.position);
 
-        if (distanceToPlayer < attackRange)
+        if (distanceToPlayer < attackRadius)
         {
             if (!isAttacking && Time.time >= lastAttackTime + attackCooldown)
             {
@@ -66,6 +67,8 @@ public class Enemy : MonoBehaviour
 
     void FollowPlayer()
     {
+        if (isAttacking) return;
+
         Vector2 direction = (player.position - transform.position).normalized;
         rb.velocity = new Vector2(direction.x * speed, rb.velocity.y);
         animator.SetBool("isWalking", true);
@@ -74,7 +77,7 @@ public class Enemy : MonoBehaviour
         // 이동 방향에 따라 적을 반전시킴
         if ((direction.x > 0 && isFacingRight) || (direction.x < 0 && !isFacingRight))
         {
-            Flip();
+            Flip(direction.x);
         }
     }
 
@@ -105,11 +108,15 @@ public class Enemy : MonoBehaviour
             }
         }
 
+
+        yield return new WaitForSeconds(0.2f); // 공격 후 0.2초 동안 대기
+        //isAttacking true일 때, Flip되지 않게 하기 위함임.
+
         isAttacking = false;
         animator.SetBool("isAttacking", false);
     }
 
-    void Flip()
+    void Flip(float directionX)
     {
         isFacingRight = !isFacingRight;
 
@@ -122,12 +129,24 @@ public class Enemy : MonoBehaviour
         Vector3 theScale = transform.localScale;
         theScale.x *= -1;
         transform.localScale = theScale;
+
+        // Collider 반전 (BoxCollider2D 사용시 필요할 수 있음)
+        boxCollider.offset = new Vector2(boxCollider.offset.x * -1, boxCollider.offset.y);
+
+        // 스프라이트 반전 후의 위치 조정
+        Vector2 newPosition = transform.position;
+        newPosition.x += directionX * 0.1f; // 이동 방향에 맞춰 조금 이동
+        transform.position = newPosition;
     }
 
-    public void TakeDamage(int damage)
+    public void TakeDamage(int damage, Vector2 knockbackDirection)
     {
         health -= damage;
         Debug.Log("Enemy took damage. Current health: " + health);
+
+        // 넉백 적용
+        rb.AddForce(knockbackDirection * knockbackForce, ForceMode2D.Impulse);
+
         if (health <= 0)
         {
             Die();
