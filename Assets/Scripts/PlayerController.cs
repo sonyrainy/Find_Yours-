@@ -49,12 +49,6 @@ public class PlayerController : MonoBehaviour
         {
             Debug.Log("Attack Point assigned successfully. Position: " + attackPoint.position);
         }
-
-        bossCurrentHealth = bossMaxHealth;
-       
-        bossInterfaceManager.SetBossHealth(bossCurrentHealth, bossMaxHealth);
-        
-
     }
 
     void Update()

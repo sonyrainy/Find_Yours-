@@ -10,6 +10,8 @@ TagManager:
   - Box
   - Door
   - Warning
+  - Cats
+  - Attack
   layers:
   - Default
   - TransparentFX
