@@ -1,27 +1,30 @@
 using UnityEngine;
 using System.Collections;
+using UnityEngine.UI;
 
 public class Enemy : MonoBehaviour
 {
-    public int health = 3;
+    public int health = 10;
     public float speed = 2.0f;
     public float attackRange = 1.0f;
     public int damage = 10;
-    public float attackCooldown = 2.0f; // °ø°Ý ÄðÅ¸ÀÓÀ» 2ÃÊ·Î ¼³Á¤
+    public float attackCooldown = 2.0f; // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Å¸ï¿½ï¿½ï¿½ï¿½ 2ï¿½Ê·ï¿½ ï¿½ï¿½ï¿½ï¿½
     public float detectionRange = 5.0f;
-    public Transform attackPoint; // °ø°Ý ¹üÀ§ÀÇ Áß½ÉÁ¡
-    public float attackRadius = 0.5f; // °ø°Ý ¹üÀ§ÀÇ ¹ÝÁö¸§
-    public float contactDamageCooldown = 1f; // Àû°ú Á¢ÃË ½Ã µ¥¹ÌÁö¸¦ ÀÔÈ÷´Â °£°Ý
+    public Transform attackPoint; // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ß½ï¿½ï¿½ï¿½
+    public float attackRadius = 0.5f; // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    public float contactDamageCooldown = 1f; // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 
     private Transform player;
     private Rigidbody2D rb;
     private Animator animator;
     private float lastAttackTime;
-    private bool isAttacking = false; // °ø°Ý ÁßÀÎÁö ¿©ºÎ¸¦ È®ÀÎÇÏ´Â º¯¼ö
-    private float lastContactDamageTime; // ¸¶Áö¸·À¸·Î Á¢ÃË µ¥¹ÌÁö¸¦ ÀÔÈù ½Ã°£
-    private bool isFacingRight = true; // ¿À¸¥ÂÊÀ» ¹Ù¶óº¸°í ÀÖ´ÂÁö ¿©ºÎ¸¦ È®ÀÎÇÏ´Â º¯¼ö
+    private bool isAttacking = false; // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Î¸ï¿½ È®ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½
+    private float lastContactDamageTime; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½
+    private bool isFacingRight = true; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ù¶óº¸°ï¿½ ï¿½Ö´ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Î¸ï¿½ È®ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½
     private BoxCollider2D boxCollider;
-
+    public int maxHealth = 10; // ìµœëŒ€ ì²´ë ¥
+    private BossInterfaceManager bossInterfaceManager;
+    
     void Start()
     {
         player = GameObject.FindGameObjectWithTag("Player").transform;
@@ -34,10 +37,11 @@ public class Enemy : MonoBehaviour
             Debug.LogError("Attack Point is not assigned in the Inspector");
         }
 
-        // ÃÊ±â centerOfMass ¼³Á¤
+        // ï¿½Ê±ï¿½ centerOfMass ï¿½ï¿½ï¿½ï¿½
         Vector2 colliderCenter = boxCollider.bounds.center;
         Vector2 localColliderCenter = transform.InverseTransformPoint(colliderCenter);
         rb.centerOfMass = localColliderCenter;
+        bossInterfaceManager = FindObjectOfType<BossInterfaceManager>();
     }
 
     void Update()
@@ -71,7 +75,7 @@ public class Enemy : MonoBehaviour
         animator.SetBool("isWalking", true);
         animator.SetBool("isAttacking", false);
 
-        // ÀÌµ¿ ¹æÇâ¿¡ µû¶ó ÀûÀ» ¹ÝÀü½ÃÅ´
+        // ï¿½Ìµï¿½ ï¿½ï¿½ï¿½â¿¡ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å´
         if ((direction.x > 0 && isFacingRight) || (direction.x < 0 && !isFacingRight))
         {
             Flip();
@@ -88,13 +92,13 @@ public class Enemy : MonoBehaviour
     IEnumerator AttackPlayer()
     {
         isAttacking = true;
-        rb.velocity = Vector2.zero; // °ø°Ý Áß¿¡´Â ¿òÁ÷ÀÌÁö ¾Êµµ·Ï ¼³Á¤
+        rb.velocity = Vector2.zero; // ï¿½ï¿½ï¿½ï¿½ ï¿½ß¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Êµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         animator.SetBool("isAttacking", true);
         animator.SetBool("isWalking", false);
 
-        yield return new WaitForSeconds(0.5f); // °ø°Ý ¾Ö´Ï¸ÞÀÌ¼Ç ½ÃÀÛ±îÁö ´ë±â
+        yield return new WaitForSeconds(0.5f); // ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½ ï¿½ï¿½ï¿½Û±ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
 
-        // ÇÃ·¹ÀÌ¾î¸¦ ÀûÀÌ °ø°Ý
+        // ï¿½Ã·ï¿½ï¿½Ì¾î¸¦ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         Collider2D[] hitPlayers = Physics2D.OverlapCircleAll(attackPoint.position, attackRadius, LayerMask.GetMask("Player"));
         foreach (Collider2D playerCollider in hitPlayers)
         {
@@ -113,12 +117,12 @@ public class Enemy : MonoBehaviour
     {
         isFacingRight = !isFacingRight;
 
-        // Rigidbody2DÀÇ Áß½ÉÀ» ¹ÝÀü½ÃÅ´
+        // Rigidbody2Dï¿½ï¿½ ï¿½ß½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å´
         Vector2 colliderCenter = boxCollider.bounds.center;
         Vector2 localColliderCenter = transform.InverseTransformPoint(colliderCenter);
         rb.centerOfMass = localColliderCenter;
 
-        // ½ºÇÁ¶óÀÌÆ® ¹ÝÀü
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ï¿½
         Vector3 theScale = transform.localScale;
         theScale.x *= -1;
         transform.localScale = theScale;
@@ -128,9 +132,18 @@ public class Enemy : MonoBehaviour
     {
         health -= damage;
         Debug.Log("Enemy took damage. Current health: " + health);
+        
         if (health <= 0)
         {
             Die();
+        }
+         UpdateHealthUI();
+    }
+    void UpdateHealthUI()
+    {
+        if (bossInterfaceManager != null)
+        {
+            bossInterfaceManager.SetBossHealth(health, maxHealth);
         }
     }
 

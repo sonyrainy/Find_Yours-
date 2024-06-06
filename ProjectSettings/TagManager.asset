@@ -9,6 +9,7 @@ TagManager:
   - Drink
   - Box
   - Door
+  - Warning
   layers:
   - Default
   - TransparentFX

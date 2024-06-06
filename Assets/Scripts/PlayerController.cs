@@ -1,5 +1,7 @@
 using UnityEngine;
 using System.Collections;
+using UnityEngine;
+using UnityEngine.UI;
 
 public class PlayerController : MonoBehaviour
 {
@@ -16,7 +18,7 @@ public class PlayerController : MonoBehaviour
     public float attackRange = 0.5f;
     public int maxHealth = 100;
     private int currentHealth;
-    public float contactDamageCooldown = 1f; // Àû°ú Á¢ÃË ½Ã µ¥¹ÌÁö¸¦ ÀÔÈ÷´Â °£°İ
+    public float contactDamageCooldown = 1f; // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 
     private Rigidbody2D rb;
     private Animator animator;
@@ -25,7 +27,11 @@ public class PlayerController : MonoBehaviour
     private bool isAttacking = false;
     private bool isDodging = false;
     private float lastDodgeTime;
-    private float lastContactDamageTime; // ¸¶Áö¸·À¸·Î Á¢ÃË µ¥¹ÌÁö¸¦ ÀÔÈù ½Ã°£
+    private float lastContactDamageTime; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½
+
+    [SerializeField] private BossInterfaceManager bossInterfaceManager;
+    public int bossMaxHealth = 100; // ë³´ìŠ¤ì˜ ìµœëŒ€ ì²´ë ¥
+    private int bossCurrentHealth; // ë³´ìŠ¤ì˜ í˜„ì¬ ì²´ë ¥
 
     void Start()
     {
@@ -43,6 +49,12 @@ public class PlayerController : MonoBehaviour
         {
             Debug.Log("Attack Point assigned successfully. Position: " + attackPoint.position);
         }
+
+        bossCurrentHealth = bossMaxHealth;
+       
+        bossInterfaceManager.SetBossHealth(bossCurrentHealth, bossMaxHealth);
+        
+
     }
 
     void Update()
@@ -184,7 +196,7 @@ public class PlayerController : MonoBehaviour
                 Enemy enemy = collision.gameObject.GetComponent<Enemy>();
                 if (enemy != null)
                 {
-                    TakeDamage(enemy.damage); // Àû°ú Á¢ÃË ½Ã Ã¼·Â °¨¼Ò
+                    TakeDamage(enemy.damage); // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ Ã¼ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
                     lastContactDamageTime = Time.time;
                 }
             }
@@ -215,7 +227,17 @@ public class PlayerController : MonoBehaviour
         if (currentHealth <= 0)
         {
             Debug.Log("Player died");
-            // °ÔÀÓ ¿À¹ö Ã³¸®
+            // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½
         }
     }
+
+    private void OnTriggerEnter2D(Collider2D collision) 
+    {
+        if (collision.CompareTag("Warning"))
+        {
+            Debug.Log("asdsad");
+            FindObjectOfType<BossInterfaceManager>().OpenBossInterface();
+        }
+    }
+
 }
