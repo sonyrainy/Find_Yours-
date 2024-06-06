@@ -14,6 +14,12 @@ public class Enemy : MonoBehaviour
     public float attackRadius = 0.5f; // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     public float contactDamageCooldown = 1f; // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 
+
+    public Transform attackPoint; // °ø°Ý ¹üÀ§ÀÇ Áß½ÉÁ¡
+    public float attackRadius = 0.5f; // °ø°Ý ¹üÀ§ÀÇ ¹ÝÁö¸§
+    public float contactDamageCooldown = 1f; // Àû°ú Á¢ÃË ½Ã µ¥¹ÌÁö¸¦ ÀÔÈ÷´Â °£°Ý
+    public float knockbackForce = 5.0f; // ³Ë¹é Èû
+
     private Transform player;
     private Rigidbody2D rb;
     private Animator animator;
@@ -22,7 +28,7 @@ public class Enemy : MonoBehaviour
     private float lastContactDamageTime; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½
     private bool isFacingRight = true; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ù¶óº¸°ï¿½ ï¿½Ö´ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Î¸ï¿½ È®ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½
     private BoxCollider2D boxCollider;
-    public int maxHealth = 10; // ìµœëŒ€ ì²´ë ¥
+    public int maxHealth = 10; // ìµœë? ì²´ë ¥
     private BossInterfaceManager bossInterfaceManager;
     
     void Start()
@@ -50,7 +56,7 @@ public class Enemy : MonoBehaviour
 
         float distanceToPlayer = Vector2.Distance(transform.position, player.position);
 
-        if (distanceToPlayer < attackRange)
+        if (distanceToPlayer < attackRadius)
         {
             if (!isAttacking && Time.time >= lastAttackTime + attackCooldown)
             {
@@ -70,6 +76,8 @@ public class Enemy : MonoBehaviour
 
     void FollowPlayer()
     {
+        if (isAttacking) return;
+
         Vector2 direction = (player.position - transform.position).normalized;
         rb.velocity = new Vector2(direction.x * speed, rb.velocity.y);
         animator.SetBool("isWalking", true);
@@ -78,7 +86,7 @@ public class Enemy : MonoBehaviour
         // ï¿½Ìµï¿½ ï¿½ï¿½ï¿½â¿¡ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å´
         if ((direction.x > 0 && isFacingRight) || (direction.x < 0 && !isFacingRight))
         {
-            Flip();
+            Flip(direction.x);
         }
     }
 
@@ -96,7 +104,7 @@ public class Enemy : MonoBehaviour
         animator.SetBool("isAttacking", true);
         animator.SetBool("isWalking", false);
 
-        yield return new WaitForSeconds(0.5f); // ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½ ï¿½ï¿½ï¿½Û±ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
+        yield return new WaitForSeconds(0.5f); // ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½ ï¿½ï¿½ï¿½Û±ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿?
 
         // ï¿½Ã·ï¿½ï¿½Ì¾î¸¦ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         Collider2D[] hitPlayers = Physics2D.OverlapCircleAll(attackPoint.position, attackRadius, LayerMask.GetMask("Player"));
@@ -109,11 +117,15 @@ public class Enemy : MonoBehaviour
             }
         }
 
+
+        yield return new WaitForSeconds(0.2f); // °ø°Ý ÈÄ 0.2ÃÊ µ¿¾È ´ë±â
+        //isAttacking trueÀÏ ¶§, FlipµÇÁö ¾Ê°Ô ÇÏ±â À§ÇÔÀÓ.
+
         isAttacking = false;
         animator.SetBool("isAttacking", false);
     }
 
-    void Flip()
+    void Flip(float directionX)
     {
         isFacingRight = !isFacingRight;
 
@@ -126,13 +138,25 @@ public class Enemy : MonoBehaviour
         Vector3 theScale = transform.localScale;
         theScale.x *= -1;
         transform.localScale = theScale;
+
+        // Collider ¹ÝÀü (BoxCollider2D »ç¿ë½Ã ÇÊ¿äÇÒ ¼ö ÀÖÀ½)
+        boxCollider.offset = new Vector2(boxCollider.offset.x * -1, boxCollider.offset.y);
+
+        // ½ºÇÁ¶óÀÌÆ® ¹ÝÀü ÈÄÀÇ À§Ä¡ Á¶Á¤
+        Vector2 newPosition = transform.position;
+        newPosition.x += directionX * 0.1f; // ÀÌµ¿ ¹æÇâ¿¡ ¸ÂÃç Á¶±Ý ÀÌµ¿
+        transform.position = newPosition;
     }
 
-    public void TakeDamage(int damage)
+    public void TakeDamage(int damage, Vector2 knockbackDirection)
     {
         health -= damage;
         Debug.Log("Enemy took damage. Current health: " + health);
         
+
+        // ³Ë¹é Àû¿ë
+        rb.AddForce(knockbackDirection * knockbackForce, ForceMode2D.Impulse);
+
         if (health <= 0)
         {
             Die();
